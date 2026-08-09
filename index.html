@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ma carte mentale</title>
+<style>
+  :root {
+    --navy: #1F3864;
+    --navy-soft: #4A5C82;
+    --gold: #B08D57;
+    --teal: #168F7F;
+    --teal-soft: #E3F3F1;
+    --bg: #F7F8FA;
+    --white: #FFFFFF;
+    --track: #E4E8EE;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin:0; padding:0; background: var(--bg); font-family: Arial, Helvetica, sans-serif; color: var(--navy); }
+  body { display:flex; justify-content:center; padding: 32px 16px 60px; }
+  .page { width:100%; max-width: 980px; }
+
+  header { text-align:center; margin-bottom: 20px; }
+  header h1 { font-size: clamp(24px, 5vw, 30px); margin: 0 0 8px 0; }
+  header p { font-size: 15px; color: var(--navy-soft); margin:0; max-width: 620px; margin-left:auto; margin-right:auto; line-height:1.5; }
+
+  a:focus-visible, button:focus-visible, input:focus-visible {
+    outline: 3px solid var(--navy) !important;
+    outline-offset: 2px;
+  }
+
+  .tabs { display:flex; justify-content:center; gap:10px; margin-bottom: 24px; flex-wrap:wrap; }
+  .tab-btn {
+    font-family:inherit; font-size:13.5px; font-weight:700; color: var(--navy-soft);
+    background: var(--white); border:2px solid var(--track); border-radius:999px;
+    padding: 9px 18px; cursor:pointer;
+  }
+  .tab-btn:hover { border-color: var(--navy-soft); }
+  .tab-btn.active { background: var(--navy); border-color: var(--navy); color:#FFFFFF; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+
+  .panel-title { font-size: 22px; font-weight:800; color: var(--navy); margin: 0 0 14px 0; }
+  .lede { font-size:15px; line-height:1.6; color:#3A4560; }
+
+  .info-card {
+    background: var(--white); border:2px solid var(--track); border-radius:16px;
+    padding: 18px 20px; margin-bottom: 14px;
+  }
+  .info-card h3 { font-size:15.5px; color: var(--navy); margin: 0 0 8px 0; }
+  .info-card p { font-size:14px; line-height:1.6; color:#4A5568; margin:0; }
+
+  .how-steps { display:flex; flex-direction:column; gap:12px; margin-bottom: 8px; }
+  .how-step {
+    display:flex; align-items:flex-start; gap:14px;
+    background: var(--white); border:2px solid var(--track); border-radius:14px; padding:14px 16px;
+    font-size:14px; line-height:1.55; color:#3A4560;
+  }
+  .how-num {
+    flex-shrink:0; width:32px; height:32px; border-radius:50%; color:#FFFFFF;
+    display:flex; align-items:center; justify-content:center; font-weight:800; font-size:14px;
+  }
+  .how-step strong { color: var(--navy); }
+
+  .tab-cta { text-align:center; margin: 22px 0 8px; }
+  .tab-cta .tb-btn { padding: 13px 22px; font-size:14.5px; }
+
+  .sources-block { text-align:center; font-size:12px; color: var(--navy-soft); margin-top: 24px; }
+  .sources-title { font-size:12px; font-weight:700; letter-spacing:1px; text-transform:uppercase; color: var(--navy-soft); margin-bottom:8px; }
+  .sources-block ul { list-style:none; padding:0; margin: 0; }
+  .sources-block li { font-size:12px; margin-bottom:4px; }
+  .sources-block a { color: var(--navy-soft); }
+
+  .history-toggle {
+    display:block; width:100%; text-align:center; font-family:inherit; font-size:13.5px; font-weight:700;
+    color: var(--navy-soft); background:none; border:none; cursor:pointer; margin-bottom: 14px;
+    text-decoration: underline; text-underline-offset: 3px;
+  }
+  .history-toggle:hover { color: var(--navy); }
+  .history-panel {
+    background: var(--white); border: 2px solid var(--track); border-radius: 14px;
+    padding: 14px 16px; margin-bottom: 22px; display:none;
+  }
+  .history-panel.open { display:block; }
+  .history-empty { font-size:13.5px; color: var(--navy-soft); font-style:italic; text-align:center; padding: 6px; }
+  .history-item { display:flex; align-items:center; justify-content:space-between; padding: 10px 8px; border-radius:10px; cursor:pointer; }
+  .history-item:hover { background: var(--bg); }
+  .history-item + .history-item { border-top: 1px solid var(--track); }
+  .history-item .hi-main { flex:1; min-width:0; }
+  .history-item .hi-title { font-size:14px; font-weight:700; color:var(--navy); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .history-item .hi-sub { font-size:12px; color:var(--navy-soft); }
+  .history-item .hi-del { background:none; border:none; color:#B7BEC9; font-size:16px; cursor:pointer; padding:4px 8px; flex-shrink:0; }
+  .history-item .hi-del:hover { color:#C0392B; }
+
+  .meta-row { display:flex; margin-bottom: 14px; }
+  .meta-row .meta-field:first-child { margin-right: 12px; }
+  .meta-field {
+    flex:1; font-family: inherit; font-size: 16px; font-weight:700; color: var(--navy);
+    border: none; border-bottom: 2px solid var(--track); background: transparent;
+    padding: 10px 4px; text-align:center; min-width: 0;
+  }
+  .meta-field:focus { outline:none; border-bottom-color: var(--navy); }
+  .meta-field::placeholder { color:#A9B2C3; font-weight:400; font-style:italic; }
+  .meta-field-solo {
+    display:block; width:100%; font-family: inherit; font-size: 15px; font-weight:700; color: var(--navy);
+    border: none; border-bottom: 2px solid var(--track); background: transparent;
+    padding: 10px 4px; text-align:center; margin-bottom: 20px;
+  }
+  .meta-field-solo:focus { outline:none; border-bottom-color: var(--navy); }
+  .meta-field-solo::placeholder { color:#A9B2C3; font-weight:400; font-style:italic; }
+
+  @media (max-width: 480px) {
+    .meta-row { flex-direction: column; }
+    .meta-row .meta-field { margin-bottom: 12px; }
+    .meta-row .meta-field:first-child { margin-right: 0; }
+  }
+
+  .toolbar {
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    background: var(--white); border:2px solid var(--track); border-radius:14px;
+    padding: 12px 14px; margin-bottom: 14px; min-height: 54px;
+  }
+  .toolbar .tb-hint { font-size:13px; color: var(--navy-soft); font-style:italic; }
+  .toolbar .tb-selected { font-size:13.5px; font-weight:700; color: var(--navy); margin-right:auto; }
+  .tb-btn {
+    font-family:inherit; font-size:13px; font-weight:700; cursor:pointer;
+    border-radius:10px; padding: 9px 14px; border:2px solid var(--track); background:var(--white); color:var(--navy);
+  }
+  .tb-btn:hover { border-color: var(--navy-soft); }
+  .tb-btn.primary { background: var(--navy); border-color: var(--navy); color:#FFFFFF; }
+  .tb-btn.danger:hover { border-color:#C0392B; color:#C0392B; }
+  .tb-btn[data-action="home"] { background: var(--teal-soft); border-color: var(--teal); color: var(--teal); margin-left:auto; }
+  .color-dot-btn {
+    width:26px; height:26px; border-radius:50%; border:2px solid var(--white); box-shadow:0 0 0 2px var(--track);
+    cursor:pointer; padding:0;
+  }
+  .color-dot-btn.selected { box-shadow:0 0 0 2px var(--navy); }
+
+  .canvas-wrap {
+    background: var(--white); border:2px solid var(--track); border-radius:16px;
+    overflow:auto; margin-bottom: 16px; position:relative;
+    max-height: 62vh;
+  }
+  .canvas-inner { position:relative; }
+  .canvas-inner svg { position:absolute; top:0; left:0; pointer-events:none; }
+
+  .mm-node {
+    position:absolute; display:flex; align-items:center; justify-content:center; text-align:center;
+    border-radius:12px; padding:6px 12px; cursor:pointer; user-select:none;
+    font-size:13.5px; font-weight:700; line-height:1.3; color:#FFFFFF;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    border: 3px solid transparent;
+    overflow:hidden;
+  }
+  .mm-node.root { font-size:15px; border-radius:16px; }
+  .mm-node.selected { border-color: var(--navy); box-shadow: 0 0 0 3px rgba(31,56,100,0.2); }
+  .mm-node input {
+    width:100%; background:transparent; border:none; color:inherit; font: inherit; text-align:center;
+    outline:none;
+  }
+  .mm-node input::placeholder { color: rgba(255,255,255,0.75); }
+
+  .save-indicator {
+    text-align:center; font-size:12.5px; color: var(--teal); font-weight:700;
+    height: 18px; margin-bottom: 4px; opacity:0; transition: opacity 0.3s ease;
+  }
+  .save-indicator.show { opacity:1; }
+
+  .actions { display:flex; margin-bottom: 8px; }
+  .actions > * { flex:1; }
+  .actions > *:first-child { margin-right: 12px; }
+  .btn-reset {
+    font-family:inherit; font-size:14px; font-weight:700; color:var(--navy-soft);
+    background:var(--white); border:2px solid var(--track); border-radius:12px; padding:12px; cursor:pointer;
+  }
+  .btn-reset:hover { border-color:#C0392B; color:#C0392B; }
+  .btn-print {
+    font-family:inherit; font-size:14px; font-weight:700; color:var(--white);
+    background:var(--navy); border:none; border-radius:12px; padding:12px; cursor:pointer;
+  }
+  .btn-print:hover { filter:brightness(1.15); }
+
+  footer { text-align:center; font-size:12px; color:var(--navy-soft); margin-top: 20px; }
+
+  @media print {
+    .tabs, .toolbar, .actions, .history-toggle, .history-panel, .save-indicator, header p { display:none !important; }
+    #panel-pourquoi, #panel-comment { display:none !important; }
+    #panel-concevoir { display:block !important; }
+    .canvas-wrap { max-height:none; overflow:visible; border:none; }
+    .mm-node, svg path { -webkit-print-color-adjust: exact; print-color-adjust: exact; color-adjust: exact; }
+    .mm-node.selected { border-color: transparent; box-shadow: 0 2px 4px rgba(0,0,0,0.08); }
+    * { outline: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+  <header>
+    <h1>🧠 Ma carte mentale</h1>
+    <p>Organisez vos idées autour d'un sujet central, en branches et sous-branches.</p>
+  </header>
+
+  <div class="tabs" id="tabs" role="tablist">
+    <button class="tab-btn active" data-tab="pourquoi">💡 À quoi ça sert</button>
+    <button class="tab-btn" data-tab="comment">⚙️ Comment ça fonctionne</button>
+    <button class="tab-btn" data-tab="concevoir">🧠 Concevoir sa carte</button>
+  </div>
+
+  <!-- ===================== ONGLET 1 : A QUOI CA SERT ===================== -->
+  <div class="tab-panel active" id="panel-pourquoi">
+    <div class="panel-title">💡 À quoi sert une carte mentale ?</div>
+    <p class="lede">La carte mentale (ou <em>mind map</em>) part d'un sujet central et se déploie en branches, pour représenter visuellement comment les idées se relient entre elles — plutôt que de les aligner en une liste plate.</p>
+
+    <div class="info-card">
+      <h3>🧩 Elle allège la charge mentale</h3>
+      <p>Selon la théorie de la charge cognitive de John Sweller (1988), notre mémoire de travail est limitée : elle sature vite face à un texte dense. En représentant les informations de façon visuelle et structurée, la carte mentale clarifie les relations entre les concepts et réduit cette surcharge — ce qui facilite la compréhension.</p>
+    </div>
+
+    <div class="info-card">
+      <h3>🎨 La couleur n'est pas décorative</h3>
+      <p>D'après les travaux de la professeure Chantale Beaucher (Université de Sherbrooke), les zones du cerveau qui traitent la couleur et les images ne sont pas celles qui traitent la lecture. Attribuer une couleur à chaque branche mobilise donc des circuits supplémentaires, ce qui renforce les connexions et l'ancrage en mémoire.</p>
+    </div>
+
+    <div class="info-card">
+      <h3>✋ Construire sa carte, pas seulement la lire</h3>
+      <p>Recopier un cours reste passif. Construire sa propre carte mentale oblige à trier, choisir des mots-clés et décider où chaque idée se rattache — une reconstruction active du savoir, bien plus exigeante pour le cerveau qu'une simple copie, et donc plus efficace pour mémoriser durablement.</p>
+    </div>
+
+    <p class="lede" style="margin-top:20px;">Ce principe rejoint directement deux mécanismes déjà vus dans le module : l'<strong>analogie</strong> (séquence 3, relier le nouveau au connu) et la <strong>catégorisation</strong> (séquence 4, ranger l'information dans des tiroirs). Une carte mentale, c'est ces deux réflexes rendus visibles sur une page.</p>
+
+    <div class="tab-cta">
+      <button class="tb-btn primary" data-goto="concevoir">Concevoir ma carte mentale →</button>
+    </div>
+
+    <div class="sources-block">
+      <div class="sources-title">Sources</div>
+      <ul>
+        <li>Sweller, J. (1988). Cognitive load during problem solving. <em>Cognitive Science</em>, 12(2), 257-285.</li>
+        <li>Chantale Beaucher, Département de pédagogie, Université de Sherbrooke — <a href="https://www.usherbrooke.ca/actualites/nouvelles/details/44930" target="_blank" rel="noopener">« Les cartes mentales : une stimulation haute en couleur pour le cerveau »</a>.</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ===================== ONGLET 2 : COMMENT CA FONCTIONNE ===================== -->
+  <div class="tab-panel" id="panel-comment">
+    <div class="panel-title">⚙️ Comment fonctionne l'outil</div>
+    <p class="lede">Trois niveaux composent une carte mentale : le sujet central, ses branches, et les sous-branches qui partent de chaque branche.</p>
+
+    <div class="how-steps">
+      <div class="how-step">
+        <div class="how-num" style="background:#1F3864;">1</div>
+        <div><strong>Le sujet central</strong> — la bulle de départ, au milieu à gauche. C'est le thème général de votre carte (une notion, un chapitre...).</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num" style="background:#E0591F;">2</div>
+        <div><strong>Les branches</strong> — cliquez sur le sujet central puis sur « + Ajouter une branche » : chaque branche reliée directement au centre représente une grande idée, et reçoit automatiquement sa propre couleur.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num" style="background:#168F7F;">3</div>
+        <div><strong>Les sous-branches</strong> — cliquez sur une branche puis « + Ajouter une branche » pour préciser une idée : la sous-branche hérite automatiquement de la couleur de sa branche, pour repérer un thème d'un coup d'œil. Vous pouvez continuer ainsi sur autant de niveaux que nécessaire.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num" style="background:#B08D57;">✏️</div>
+        <div><strong>Renommer</strong> — double-cliquez sur une bulle (ou sélectionnez-la puis « Renommer ») pour modifier son texte. Appuyez sur Entrée pour valider.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num" style="background:#8A5CB0;">🗑️</div>
+        <div><strong>Supprimer</strong> — supprimer une branche efface aussi automatiquement toutes ses sous-branches.</div>
+      </div>
+      <div class="how-step">
+        <div class="how-num" style="background:#C23B6B;">🏠</div>
+        <div><strong>Revenir au centre</strong> — si votre carte s'agrandit et que le sujet central sort de l'écran, le bouton « Sujet central » dans la barre d'outils vous y ramène en un clic.</div>
+      </div>
+    </div>
+
+    <p class="lede" style="margin-top:18px;">Votre carte se sauvegarde automatiquement. Une fois terminée, imprimez-la ou exportez-la en PDF pour la garder sous la main.</p>
+
+    <div class="tab-cta">
+      <button class="tb-btn primary" data-goto="concevoir">Concevoir ma carte mentale →</button>
+    </div>
+  </div>
+
+  <!-- ===================== ONGLET 3 : CONCEVOIR SA CARTE ===================== -->
+  <div class="tab-panel" id="panel-concevoir">
+    <button class="history-toggle" id="historyToggle">📚 Voir mes cartes précédentes (0)</button>
+    <div class="history-panel" id="historyPanel">
+      <div class="history-empty" id="historyEmpty">Aucune carte archivée pour l'instant.</div>
+      <div id="historyList"></div>
+    </div>
+
+    <div class="meta-row">
+      <input type="text" class="meta-field" id="matiere" placeholder="Matière" aria-label="Matière">
+      <input type="text" class="meta-field" id="chapitre" placeholder="Chapitre" aria-label="Chapitre">
+    </div>
+    <input type="text" class="meta-field-solo" id="sequenceCours" placeholder="Séquence / partie du cours" aria-label="Séquence ou partie du cours">
+
+    <div class="toolbar" id="toolbar"></div>
+
+    <div class="canvas-wrap" id="canvasWrap">
+      <div class="canvas-inner" id="canvasInner"></div>
+    </div>
+    <div class="save-indicator" id="saveIndicator">✓ Enregistré</div>
+
+    <div class="actions">
+      <button class="btn-reset" id="resetBtn">Nouvelle carte</button>
+      <button class="btn-print" id="printBtn">Imprimer / PDF</button>
+    </div>
+  </div>
+
+  <footer>Benjamin RICHARD - Tous droits réservés</footer>
+</div>
+
+<script>
+(function () {
+  const STORAGE_KEY = 'carte-mentale-v1';
+  const HISTORY_KEY = 'carte-mentale-history-v1';
+  const BRANCH_COLORS = ['#1F3864', '#E0591F', '#168F7F', '#B08D57', '#8A5CB0', '#C23B6B', '#2E6B9E', '#4A8B3B'];
+  const NODE_W = 170, NODE_H = 52, H_GAP = 64, V_GAP = 14, PAD = 30;
+
+  // ---- onglets ----
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const tab = btn.dataset.tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b === btn));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+    });
+  });
+  document.querySelectorAll('[data-goto]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelector(`.tab-btn[data-tab="${btn.dataset.goto}"]`).click();
+    });
+  });
+
+  const matiereEl = document.getElementById('matiere');
+  const chapitreEl = document.getElementById('chapitre');
+  const sequenceCoursEl = document.getElementById('sequenceCours');
+  const toolbarEl = document.getElementById('toolbar');
+  const canvasWrap = document.getElementById('canvasWrap');
+  const canvasInner = document.getElementById('canvasInner');
+  const historyToggle = document.getElementById('historyToggle');
+  const historyPanel = document.getElementById('historyPanel');
+  const historyList = document.getElementById('historyList');
+  const historyEmpty = document.getElementById('historyEmpty');
+  const saveIndicator = document.getElementById('saveIndicator');
+
+  let nodes = []; // {id, text, parentId, color}
+  let selectedId = null;
+  let editingId = null;
+  let currentId = null;
+  let saveTimer = null;
+  let nextNum = 1;
+
+  function newId() { return 'n' + (nextNum++) + '_' + Math.random().toString(36).slice(2,7); }
+  function escapeHtml(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  function defaultTree() {
+    return [{ id: 'root', text: 'Sujet central', parentId: null, color: '#1F3864' }];
+  }
+
+  function children(id) { return nodes.filter(n => n.parentId === id); }
+  function findNode(id) { return nodes.find(n => n.id === id); }
+  function descendantIds(id) {
+    let out = [];
+    children(id).forEach(c => { out.push(c.id); out = out.concat(descendantIds(c.id)); });
+    return out;
+  }
+
+  // ---------- disposition automatique (arbre horizontal) ----------
+  function computeLayout() {
+    const root = findNode('root');
+    if (!root) return { maxX: 0, maxY: 0 };
+    let maxX = 0, maxY = 0;
+    function layout(node, depth, yTop) {
+      const x = PAD + depth * (NODE_W + H_GAP);
+      const kids = children(node.id);
+      let h;
+      if (kids.length === 0) {
+        node._x = x; node._y = yTop;
+        h = NODE_H + V_GAP;
+      } else {
+        let cursor = yTop, total = 0;
+        kids.forEach(k => { const kh = layout(k, depth + 1, cursor); cursor += kh; total += kh; });
+        total -= V_GAP;
+        node._x = x; node._y = yTop + total / 2 - NODE_H / 2;
+        h = total + V_GAP;
+      }
+      maxX = Math.max(maxX, x + NODE_W);
+      maxY = Math.max(maxY, node._y + NODE_H);
+      return h;
+    }
+    layout(root, 0, PAD);
+    return { maxX: maxX + PAD, maxY: maxY + PAD };
+  }
+
+  function render() {
+    const { maxX, maxY } = computeLayout();
+    canvasInner.style.width = maxX + 'px';
+    canvasInner.style.height = maxY + 'px';
+
+    let svg = `<svg width="${maxX}" height="${maxY}">`;
+    nodes.forEach(n => {
+      if (n.parentId === null) return;
+      const parent = findNode(n.parentId);
+      if (!parent) return;
+      const x1 = parent._x + NODE_W, y1 = parent._y + NODE_H / 2;
+      const x2 = n._x, y2 = n._y + NODE_H / 2;
+      const midX = (x1 + x2) / 2;
+      svg += `<path d="M ${x1} ${y1} C ${midX} ${y1}, ${midX} ${y2}, ${x2} ${y2}" stroke="${n.color}" stroke-width="2.5" fill="none" opacity="0.65"/>`;
+    });
+    svg += '</svg>';
+
+    let nodesHtml = '';
+    nodes.forEach(n => {
+      const isRoot = n.id === 'root';
+      const isSelected = n.id === selectedId;
+      const isEditing = n.id === editingId;
+      const inner = isEditing
+        ? `<input type="text" data-editid="${n.id}" value="${escapeHtml(n.text)}" placeholder="Nom de la branche...">`
+        : escapeHtml(n.text || (isRoot ? 'Sujet central' : 'Sans titre'));
+      nodesHtml += `<div class="mm-node${isRoot ? ' root' : ''}${isSelected ? ' selected' : ''}" data-id="${n.id}"
+        style="left:${n._x}px; top:${n._y}px; width:${NODE_W}px; min-height:${NODE_H}px; background:${n.color};">${inner}</div>`;
+    });
+
+    canvasInner.innerHTML = svg + nodesHtml;
+
+    canvasInner.querySelectorAll('.mm-node').forEach(el => {
+      el.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.dataset.id;
+        if (editingId && editingId !== id) commitEdit();
+        selectedId = id;
+        renderToolbar();
+        canvasInner.querySelectorAll('.mm-node').forEach(x => x.classList.toggle('selected', x.dataset.id === id));
+      });
+      el.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        startEdit(el.dataset.id);
+      });
+    });
+    const input = canvasInner.querySelector('input[data-editid]');
+    if (input) {
+      input.focus();
+      input.select();
+      input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') { e.preventDefault(); commitEdit(); }
+        if (e.key === 'Escape') { editingId = null; render(); }
+      });
+      input.addEventListener('blur', () => commitEdit());
+      input.addEventListener('click', (e) => e.stopPropagation());
+    }
+
+    renderToolbar();
+  }
+
+  function startEdit(id) {
+    selectedId = id;
+    editingId = id;
+    render();
+  }
+  function commitEdit() {
+    if (!editingId) return;
+    const input = canvasInner.querySelector('input[data-editid]');
+    if (input) {
+      const node = findNode(editingId);
+      if (node) node.text = input.value.trim();
+    }
+    editingId = null;
+    saveState();
+  }
+
+  function renderToolbar() {
+    const node = findNode(selectedId);
+    const homeBtn = `<button class="tb-btn" data-action="home" title="Revenir au sujet central">🏠 Sujet central</button>`;
+    if (!node) {
+      toolbarEl.innerHTML = `<span class="tb-hint">Cliquez sur une bulle pour la sélectionner (ou double-cliquez pour la renommer directement).</span>${homeBtn}`;
+      wireHomeBtn();
+      return;
+    }
+    let html = `<span class="tb-selected">${escapeHtml(node.text || '(sans titre)')}</span>`;
+    html += `<button class="tb-btn primary" data-action="add">+ Ajouter une branche</button>`;
+    html += `<button class="tb-btn" data-action="rename">✏️ Renommer</button>`;
+    if (node.id !== 'root') {
+      html += `<button class="tb-btn danger" data-action="delete">🗑️ Supprimer</button>`;
+    }
+    if (node.parentId === 'root' || node.id === 'root') {
+      html += `<span style="display:flex; gap:6px; margin-left:6px;">`;
+      BRANCH_COLORS.forEach(c => {
+        html += `<button class="color-dot-btn${node.color === c ? ' selected' : ''}" data-color="${c}" style="background:${c}" aria-label="Couleur ${c}"></button>`;
+      });
+      html += `</span>`;
+    }
+    if (node.id !== 'root') html += homeBtn;
+    toolbarEl.innerHTML = html;
+
+    const addBtn = toolbarEl.querySelector('[data-action="add"]');
+    if (addBtn) addBtn.addEventListener('click', () => addChild(node.id));
+    const renameBtn = toolbarEl.querySelector('[data-action="rename"]');
+    if (renameBtn) renameBtn.addEventListener('click', () => startEdit(node.id));
+    const delBtn = toolbarEl.querySelector('[data-action="delete"]');
+    if (delBtn) delBtn.addEventListener('click', () => deleteNode(node.id));
+    toolbarEl.querySelectorAll('.color-dot-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const color = btn.dataset.color;
+        node.color = color;
+        descendantIds(node.id).forEach(id => { findNode(id).color = color; });
+        saveState();
+      });
+    });
+    wireHomeBtn();
+  }
+
+  function wireHomeBtn() {
+    const btn = toolbarEl.querySelector('[data-action="home"]');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+      if (editingId) commitEdit();
+      selectedId = 'root';
+      render();
+      const el = canvasInner.querySelector('.mm-node[data-id="root"]');
+      if (el) el.scrollIntoView({ block: 'center', inline: 'center', behavior: 'smooth' });
+    });
+  }
+
+  function addChild(parentId) {
+    const parent = findNode(parentId);
+    const color = parent.id === 'root'
+      ? BRANCH_COLORS[children('root').length % BRANCH_COLORS.length]
+      : parent.color;
+    const id = newId();
+    nodes.push({ id, text: '', parentId, color });
+    selectedId = id;
+    editingId = id;
+    saveState();
+    setTimeout(() => {
+      const wrap = canvasWrap;
+      const el = canvasInner.querySelector(`.mm-node[data-id="${id}"]`);
+      if (el) el.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+    }, 30);
+  }
+
+  function deleteNode(id) {
+    if (id === 'root') return;
+    if (!confirm('Supprimer cette branche et toutes ses sous-branches ?')) return;
+    const toRemove = new Set([id, ...descendantIds(id)]);
+    nodes = nodes.filter(n => !toRemove.has(n.id));
+    if (selectedId && toRemove.has(selectedId)) selectedId = null;
+    saveState();
+  }
+
+  canvasWrap.addEventListener('click', () => {
+    if (editingId) commitEdit();
+    selectedId = null;
+    render();
+  });
+
+  // ---------- historique ----------
+  function loadHistory() {
+    try { const raw = localStorage.getItem(HISTORY_KEY); if (raw) return JSON.parse(raw); } catch (e) {}
+    return [];
+  }
+  function saveHistory(arr) { try { localStorage.setItem(HISTORY_KEY, JSON.stringify(arr)); } catch (e) {} }
+
+  function renderHistory() {
+    const history = loadHistory();
+    historyToggle.textContent = `📚 Voir mes cartes précédentes (${history.length})`;
+    historyEmpty.style.display = history.length ? 'none' : 'block';
+    historyList.innerHTML = '';
+    history.forEach(entry => {
+      const el = document.createElement('div');
+      el.className = 'history-item';
+      const rootNode = (entry.nodes || []).find(n => n.id === 'root');
+      const label = [entry.matiere, entry.chapitre].filter(Boolean).join(' — ') || (rootNode && rootNode.text) || '(sans titre)';
+      el.innerHTML = `
+        <div class="hi-main">
+          <div class="hi-title">${escapeHtml(label)}</div>
+          <div class="hi-sub">${(entry.nodes || []).length} bulle(s)</div>
+        </div>
+        <button class="hi-del" aria-label="Supprimer cette carte">✕</button>`;
+      el.querySelector('.hi-main').addEventListener('click', () => {
+        matiereEl.value = entry.matiere || '';
+        chapitreEl.value = entry.chapitre || '';
+        sequenceCoursEl.value = entry.sequenceCours || '';
+        nodes = entry.nodes && entry.nodes.length ? entry.nodes : defaultTree();
+        selectedId = null; editingId = null;
+        currentId = entry.id;
+        saveState();
+        historyPanel.classList.remove('open');
+      });
+      el.querySelector('.hi-del').addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (!confirm('Supprimer définitivement cette carte de l\'historique ?')) return;
+        saveHistory(loadHistory().filter(e => e.id !== entry.id));
+        renderHistory();
+      });
+      historyList.appendChild(el);
+    });
+  }
+  historyToggle.addEventListener('click', () => historyPanel.classList.toggle('open'));
+
+  function showSaveIndicator() {
+    saveIndicator.classList.add('show');
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveIndicator.classList.remove('show'), 1400);
+  }
+
+  function saveState() {
+    const state = { currentId, matiere: matiereEl.value, chapitre: chapitreEl.value, sequenceCours: sequenceCoursEl.value, nodes };
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch (e) {}
+    render();
+    showSaveIndicator();
+  }
+
+  matiereEl.addEventListener('input', saveState);
+  chapitreEl.addEventListener('input', saveState);
+  sequenceCoursEl.addEventListener('input', saveState);
+
+  document.getElementById('resetBtn').addEventListener('click', () => {
+    const hasContent = nodes.length > 1 || matiereEl.value.trim() || chapitreEl.value.trim() || sequenceCoursEl.value.trim();
+    if (hasContent) {
+      if (!confirm('Archiver cette carte dans l\'historique et repartir sur une nouvelle ?')) return;
+      const history = loadHistory();
+      const id = currentId || ('a' + Date.now());
+      const entry = { id, matiere: matiereEl.value, chapitre: chapitreEl.value, sequenceCours: sequenceCoursEl.value, nodes };
+      const idx = history.findIndex(e => e.id === id);
+      if (idx >= 0) history[idx] = entry; else history.unshift(entry);
+      saveHistory(history);
+      renderHistory();
+    }
+    nodes = defaultTree();
+    selectedId = null; editingId = null; currentId = null;
+    matiereEl.value = ''; chapitreEl.value = ''; sequenceCoursEl.value = '';
+    saveState();
+  });
+
+  document.getElementById('printBtn').addEventListener('click', () => window.print());
+
+  // init
+  (function initState() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        currentId = parsed.currentId || null;
+        matiereEl.value = parsed.matiere || '';
+        chapitreEl.value = parsed.chapitre || '';
+        sequenceCoursEl.value = parsed.sequenceCours || '';
+        nodes = (parsed.nodes && parsed.nodes.length) ? parsed.nodes : defaultTree();
+      } else {
+        nodes = defaultTree();
+      }
+    } catch (e) { nodes = defaultTree(); }
+  })();
+  render();
+  renderHistory();
+})();
+</script>
+
+</body>
+</html>
